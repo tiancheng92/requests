@@ -2,11 +2,11 @@ package requests
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/tidwall/gjson"
 	"github.com/wxnacy/wgo/arrays"
 )
 
@@ -38,7 +38,7 @@ func (r Request) Run() (res Response, err error) {
 	}
 	// 判断有无请求包体，如有则判断其格式是否为json
 	if r.Data != "" {
-		if !gjson.Valid(r.Data) {
+		if !json.Valid([]byte(r.Data)) {
 			return Response{}, errors.New("invalid json")
 		}
 		req, err = http.NewRequest(r.Method, r.URL, bytes.NewBuffer([]byte(r.Data)))
