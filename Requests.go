@@ -41,6 +41,51 @@ func (r *Request) AddHeader(key, value string) {
 	r.Header[key] = value
 }
 
+func (r *Request) Options() (res Response, err error) {
+	r.Method = "OPTIONS"
+	return r.Run()
+}
+
+func (r *Request) Get() (res Response, err error) {
+	r.Method = "GET"
+	return r.Run()
+}
+
+func (r *Request) Head() (res Response, err error) {
+	r.Method = "HEAD"
+	return r.Run()
+}
+
+func (r *Request) Post() (res Response, err error) {
+	r.Method = "POST"
+	return r.Run()
+}
+
+func (r *Request) Put() (res Response, err error) {
+	r.Method = "PUT"
+	return r.Run()
+}
+
+func (r *Request) Delete() (res Response, err error) {
+	r.Method = "DELETE"
+	return r.Run()
+}
+
+func (r *Request) Trace() (res Response, err error) {
+	r.Method = "TRACE"
+	return r.Run()
+}
+
+func (r *Request) Connect() (res Response, err error) {
+	r.Method = "CONNECT"
+	return r.Run()
+}
+
+func (r *Request) Patch() (res Response, err error) {
+	r.Method = "PATCH"
+	return r.Run()
+}
+
 // Run 执行request请求
 func (r *Request) Run() (res Response, err error) {
 	var req *http.Request
