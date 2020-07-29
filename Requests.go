@@ -25,6 +25,22 @@ type Response struct {
 	Header     http.Header
 }
 
+func (r Request) SetMethod(method string) {
+	r.Method = method
+}
+
+func (r Request) SetUrl(url string) {
+	r.URL = url
+}
+
+func (r Request) SetData(data string) {
+	r.Data = data
+}
+
+func (r Request) AddHeader(key, value string) {
+	r.Header[key] = value
+}
+
 // Run 执行request请求
 func (r Request) Run() (res Response, err error) {
 	var req *http.Request
