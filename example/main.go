@@ -1,15 +1,9 @@
-# requests
-#### 发起http请求
-##### 功能描述：
-* 发起http请求。
-##### 使用方法：
-```go
 package main
 
 import (
 	"fmt"
 	"log"
-	"github.com/tiancheng92/requests"
+	"requests"
 )
 
 func ChainCall() {
@@ -57,6 +51,3 @@ func main() {
 	StructCall()
 	StructureCall()
 }
-
-```
-如有特殊需求请留言。

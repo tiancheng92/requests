@@ -25,20 +25,24 @@ type Response struct {
 	Header     http.Header
 }
 
-func (r *Request) SetMethod(method string) {
+func (r *Request) SetMethod(method string) *Request {
 	r.Method = method
+	return r
 }
 
-func (r *Request) SetUrl(url string) {
+func (r *Request) SetUrl(url string) *Request {
 	r.URL = url
+	return r
 }
 
-func (r *Request) SetData(data string) {
+func (r *Request) SetData(data string) *Request {
 	r.Data = data
+	return r
 }
 
-func (r *Request) AddHeader(key, value string) {
+func (r *Request) AddHeader(key, value string) *Request {
 	r.Header[key] = value
+	return r
 }
 
 func (r *Request) Options() (res Response, err error) {
@@ -87,7 +91,7 @@ func (r *Request) Patch() (res Response, err error) {
 }
 
 // Run 执行request请求
-func (r *Request) Run() (res Response, err error) {
+func (r Request) Run() (res Response, err error) {
 	var req *http.Request
 	// 判断方法是否合法
 	if arrays.Contains([]string{"OPTIONS", "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "CONNECT", "PATCH"}, r.Method) < 0 {
