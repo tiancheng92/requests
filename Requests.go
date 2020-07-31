@@ -25,6 +25,10 @@ type Response struct {
 	Header     http.Header
 }
 
+func (res Response) JsonBind(obj interface{}) error {
+	return json.NewDecoder(bytes.NewReader([]byte(res.Body))).Decode(obj)
+}
+
 func (r *Request) SetMethod(method string) *Request {
 	r.Method = method
 	return r
