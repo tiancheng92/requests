@@ -50,6 +50,9 @@ func (r *Request) SetData(data string) *Request {
 }
 
 func (r *Request) AddHeader(key, value string) *Request {
+	if r.Header == nil {
+		r.Header = make(map[string]string)
+	}
 	r.Header[key] = value
 	return r
 }
