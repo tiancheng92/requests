@@ -49,6 +49,15 @@ func (r *Request) SetData(data string) *Request {
 	return r
 }
 
+func (r *Request) SetStructData(data interface{}) *Request {
+	j, err := json.Marshal(&data)
+	if err != nil {
+		panic("json marshal failed")
+	}
+	r.Data = string(j)
+	return r
+}
+
 func (r *Request) AddHeader(key, value string) *Request {
 	if r.Header == nil {
 		r.Header = make(map[string]string)
