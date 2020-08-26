@@ -50,7 +50,7 @@ func (r *Request) SetData(data string) *Request {
 }
 
 func (r *Request) SetStructData(data interface{}) *Request {
-	j, err := json.Marshal(&data)
+	j, err := json.Marshal(data)
 	if err != nil {
 		panic("json marshal failed")
 	}
