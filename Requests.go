@@ -159,7 +159,7 @@ func (r *Request) getHttpRequest() (*http.Request, error) {
 			req.Header.Set(k, v)
 		}
 	} else {
-		req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+		req.Header.Set("Content-Type", "application/json")
 	}
 	req.Close = true
 	return req, nil
