@@ -133,10 +133,6 @@ func (r *Request) check() error {
 	if r.URL == "" {
 		return errors.New("URL is empty")
 	}
-	// 判断有无请求包体，如有则判断其格式是否为json
-	if r.Data != "" && !json.Valid([]byte(r.Data)) {
-		return errors.New("invalid json")
-	}
 	return nil
 }
 
