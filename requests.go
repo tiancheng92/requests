@@ -61,17 +61,13 @@ func (r *Request) SetBody(data interface{}) *Request {
 }
 
 func (r *Request) SetRawQuery(data string) *Request {
-	r.Query = data
+	r.Query = strings.TrimPrefix(data, "?")
 	return r
 }
 
-func (r *Request) SetQuery(queryDictList ...map[string]string) *Request {
-	var ql []string
-	for _, queryDict := range queryDictList {
-		for key, value := range queryDict {
-			ql = append(ql, fmt.Sprintf("%s=%s", key, value))
-		}
-	}
+func (r *Request) AddQuery(key, value string) *Request {
+	ql := strings.Split(r.Query, "&")
+	ql = append(ql, fmt.Sprintf("%s=%s", key, value))
 	if len(ql) > 0 {
 		r.Query = strings.Join(ql, "&")
 	}
