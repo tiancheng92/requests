@@ -3,6 +3,7 @@ package requests
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -19,52 +20,62 @@ import (
 type Request struct {
 	Method  string
 	URL     string
-	Body    io.Reader
 	Query   string
+	Body    io.Reader
 	Header  map[string]string
-	TimeOut time.Duration
 	Cookies []*http.Cookie
-	File    FileInfo
+	TimeOut time.Duration
+	File    struct {
+		Fieldname string
+		Filename  string
+	}
 }
 
-type FileInfo struct {
-	Fieldname string
-	Filename  string
-}
-
+// New 新建一个Request对象
 func New() Request {
 	return Request{}
 }
 
-func (r *Request) SetMethod(method string) *Request {
-	r.Method = method
-	return r
-}
-
+// SetUrl 设置请求的url
 func (r *Request) SetUrl(url string) *Request {
 	r.URL = url
 	return r
 }
 
+// SetRawBody 设置请求体（json或xml）
 func (r *Request) SetRawBody(data string) *Request {
 	r.Body = bytes.NewBuffer([]byte(data))
 	return r
 }
 
-func (r *Request) SetBody(data interface{}) *Request {
+// SetJsonBody 设置Json请求体（结构体、Array、Dict...）
+func (r *Request) SetJsonBody(data interface{}) *Request {
 	j, err := json.Marshal(data)
 	if err != nil {
 		panic("json marshal failed")
 	}
 	r.Body = bytes.NewBuffer(j)
-	return r
+	return r.AddJsonHeader()
+
 }
 
+// SetXMLBody 设置XML请求体（结构体、Array、Dict...）
+func (r *Request) SetXMLBody(data interface{}) *Request {
+	j, err := xml.Marshal(data)
+	if err != nil {
+		panic("xml marshal failed")
+	}
+	r.Body = bytes.NewBuffer(j)
+	return r.AddXMLHeader()
+}
+
+// SetRawQuery 设置Query（字符串 e.g:a=1&b=2）
 func (r *Request) SetRawQuery(data string) *Request {
 	r.Query = strings.TrimPrefix(data, "?")
 	return r
 }
 
+// AddQuery 以k，v的形式逐一新增Query
 func (r *Request) AddQuery(key, value string) *Request {
 	ql := strings.Split(r.Query, "&")
 	ql = append(ql, fmt.Sprintf("%s=%s", key, value))
@@ -74,11 +85,13 @@ func (r *Request) AddQuery(key, value string) *Request {
 	return r
 }
 
+// AddCookie 新增Cookie
 func (r *Request) AddCookie(cookie http.Cookie) *Request {
 	r.Cookies = append(r.Cookies, &cookie)
 	return r
 }
 
+// AddHeader 新增Header头
 func (r *Request) AddHeader(key, value string) *Request {
 	if r.Header == nil {
 		r.Header = make(map[string]string)
@@ -87,44 +100,81 @@ func (r *Request) AddHeader(key, value string) *Request {
 	return r
 }
 
+// AddFormHeader 添加表单请求头
+func (r *Request) AddFormHeader() *Request {
+	if r.Header == nil {
+		r.Header = make(map[string]string)
+	}
+	r.Header["Content-Type"] = "application/x-www-form-urlencoded"
+	return r
+}
+
+// AddJsonHeader 添加Json请求头
+func (r *Request) AddJsonHeader() *Request {
+	if r.Header == nil {
+		r.Header = make(map[string]string)
+	}
+	r.Header["Content-Type"] = "application/json"
+	return r
+}
+
+// AddJsonHeader 添加XML请求头
+func (r *Request) AddXMLHeader() *Request {
+	if r.Header == nil {
+		r.Header = make(map[string]string)
+	}
+	r.Header["Content-Type"] = "text/xml"
+	return r
+}
+
+// SetTimeOut 设置请求超时时间
 func (r *Request) SetTimeOut(duration time.Duration) *Request {
 	r.TimeOut = duration
 	return r
 }
 
-func (r *Request) UploadFile(fieldname, filename string) *Request {
-	r.File = FileInfo{
-		Fieldname: fieldname,
-		Filename:  filename,
-	}
+// SetUploadFile 设置上传的文件
+func (r *Request) SetUploadFile(fieldname, filename string) *Request {
+	r.File = struct {
+		Fieldname string
+		Filename  string
+	}{fieldname, filename}
 	return r
 }
 
+// Get 发起Get请求
 func (r *Request) Get() (Response, error) {
 	r.Method = "GET"
-	return r.Run()
+	return r.run()
 }
 
+// Post 发起Post请求
 func (r *Request) Post() (Response, error) {
 	r.Method = "POST"
-	return r.Run()
+	return r.run()
 }
 
+// Put 发起Put请求
 func (r *Request) Put() (Response, error) {
 	r.Method = "PUT"
-	return r.Run()
+	return r.run()
 }
 
-func (r *Request) Delete() (Response, error) {
-	r.Method = "DELETE"
-	return r.Run()
-}
-
+// Patch 发起Patch请求
 func (r *Request) Patch() (Response, error) {
 	r.Method = "PATCH"
-	return r.Run()
+	return r.run()
 }
 
+// Delete 发起Delete请求
+func (r *Request) Delete() (Response, error) {
+	r.Method = "DELETE"
+	return r.run()
+}
+
+/************* 以下方法不对外暴露 **************/
+
+// check 检测Request对象总的参数是否合法
 func (r *Request) check() error {
 	// 判断方法是否合法
 	var methodList = []string{"GET", "POST", "PUT", "DELETE", "PATCH"}
@@ -138,10 +188,13 @@ func (r *Request) check() error {
 	if !methodValid {
 		return errors.New("invalid method")
 	}
+
 	// 判断URL是否为空
 	if r.URL == "" {
 		return errors.New("URL is empty")
 	}
+
+	// 判断文件上传所需的参数是否齐全
 	if r.File.Filename != "" && r.File.Fieldname == "" {
 		return errors.New("fieldname is empty")
 	}
@@ -151,73 +204,102 @@ func (r *Request) check() error {
 	return nil
 }
 
-func (r *Request) getHttpRequest() (*http.Request, error) {
-	var url string
-
+// getCompleteURL 获取完整的URL地址
+func (r *Request) getCompleteURL() string {
 	if r.Query != "" {
-		url = fmt.Sprintf("%s?%s", r.URL, r.Query)
+		if strings.Contains(r.URL, "?") {
+			return fmt.Sprintf("%s&%s", r.URL, r.Query)
+		}
+		return fmt.Sprintf("%s?%s", r.URL, r.Query)
 	} else {
-		url = r.URL
+		return r.URL
 	}
+}
 
-	req, err := http.NewRequest(r.Method, url, r.Body)
-	if err != nil {
-		return nil, err
-	}
-	// 设置请求头,如无则添加默认请求头
+// setHeader 为http.Request对象设置请求头
+func (r *Request) setHeader(req *http.Request) *http.Request {
 	if len(r.Header) > 0 {
 		for k, v := range r.Header {
 			req.Header.Set(k, v)
 		}
-	} else {
-		req.Header.Set("Content-Type", "application/json")
 	}
+	return req
+}
 
+// setCookie 为http.Request对象设置Cookie
+func (r *Request) setCookie(req *http.Request) *http.Request {
 	if len(r.Cookies) > 0 {
 		for _, c := range r.Cookies {
 			req.AddCookie(c)
 		}
 	}
-
-	req.Close = true
-	return req, nil
+	return req
 }
 
-func (r *Request) getUploadRequest() (*http.Request, error) {
+// setUploadBody 设置文件上传的请求体
+func (r *Request) setUploadBody() error {
 	body := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(body)
 
 	fileWriter, err := bodyWriter.CreateFormFile(r.File.Fieldname, path.Base(r.File.Filename))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	f, err := os.Open(r.File.Filename)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer f.Close()
 
 	_, err = io.Copy(fileWriter, f)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	contentType := bodyWriter.FormDataContentType()
 	err = bodyWriter.Close()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	req, err := http.NewRequest(r.Method, r.URL, body)
+	r.Body = body
+	r.AddHeader("Content-Type", contentType)
+	return nil
+}
+
+// getBasisRequest 获取基础请求的http.Request对象
+func (r *Request) getBasisRequest() (*http.Request, error) {
+	url := r.getCompleteURL()
+	req, err := http.NewRequest(r.Method, url, r.Body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", contentType)
+	req = r.setHeader(req)
+	req = r.setCookie(req)
+	req.Close = true
+
 	return req, nil
 }
 
-// Run 执行request请求
-func (r Request) Run() (Response, error) {
+// getUploadRequest 获取支持文件上传的http.Request对象
+func (r *Request) getUploadRequest() (*http.Request, error) {
+	url := r.getCompleteURL()
+	err := r.setUploadBody()
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(r.Method, url, r.Body)
+	if err != nil {
+		return nil, err
+	}
+	req = r.setHeader(req)
+	req = r.setCookie(req)
+	req.Close = true
+	return req, nil
+}
+
+// run 执行request请求
+func (r Request) run() (Response, error) {
 	var req *http.Request
 	var err error
 	// 检测数据
@@ -228,7 +310,7 @@ func (r Request) Run() (Response, error) {
 	case r.File.Filename != "":
 		req, err = r.getUploadRequest()
 	default:
-		req, err = r.getHttpRequest()
+		req, err = r.getBasisRequest()
 	}
 	if err != nil {
 		return Response{}, err

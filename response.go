@@ -3,6 +3,7 @@ package requests
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"net/http"
 )
 
@@ -17,6 +18,10 @@ type ResponseBody []byte
 
 func (rb ResponseBody) JsonBind(obj interface{}) error {
 	return json.NewDecoder(bytes.NewReader(rb)).Decode(obj)
+}
+
+func (rb ResponseBody) XMLBind(obj interface{}) error {
+	return xml.NewDecoder(bytes.NewReader(rb)).Decode(obj)
 }
 
 func (rb ResponseBody) String() string {
