@@ -299,7 +299,7 @@ func (r *Request) getUploadRequest() (*http.Request, error) {
 }
 
 // run 执行request请求
-func (r Request) run() (Response, error) {
+func (r *Request) run() (Response, error) {
 	var req *http.Request
 	var err error
 	// 检测数据
@@ -315,7 +315,6 @@ func (r Request) run() (Response, error) {
 	if err != nil {
 		return Response{}, err
 	}
-
 	// 开始请求
 	client := &http.Client{Timeout: r.TimeOut}
 	resp, err := client.Do(req)
