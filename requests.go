@@ -143,31 +143,31 @@ func (r *Request) SetUploadFile(fieldname, filename string) *Request {
 }
 
 // Get 发起Get请求
-func (r *Request) Get() (Response, error) {
+func (r *Request) Get() (*Response, error) {
 	r.Method = "GET"
 	return r.run()
 }
 
 // Post 发起Post请求
-func (r *Request) Post() (Response, error) {
+func (r *Request) Post() (*Response, error) {
 	r.Method = "POST"
 	return r.run()
 }
 
 // Put 发起Put请求
-func (r *Request) Put() (Response, error) {
+func (r *Request) Put() (*Response, error) {
 	r.Method = "PUT"
 	return r.run()
 }
 
 // Patch 发起Patch请求
-func (r *Request) Patch() (Response, error) {
+func (r *Request) Patch() (*Response, error) {
 	r.Method = "PATCH"
 	return r.run()
 }
 
 // Delete 发起Delete请求
-func (r *Request) Delete() (Response, error) {
+func (r *Request) Delete() (*Response, error) {
 	r.Method = "DELETE"
 	return r.run()
 }
@@ -299,12 +299,12 @@ func (r *Request) getUploadRequest() (*http.Request, error) {
 }
 
 // run 执行request请求
-func (r *Request) run() (Response, error) {
+func (r *Request) run() (*Response, error) {
 	var req *http.Request
 	var err error
 	// 检测数据
 	if err = r.check(); err != nil {
-		return Response{}, err
+		return nil, err
 	}
 	switch {
 	case r.File.Filename != "":
@@ -313,13 +313,13 @@ func (r *Request) run() (Response, error) {
 		req, err = r.getBasisRequest()
 	}
 	if err != nil {
-		return Response{}, err
+		return nil, err
 	}
 	// 开始请求
 	client := &http.Client{Timeout: r.TimeOut}
 	resp, err := client.Do(req)
 	if err != nil {
-		return Response{}, err
+		return nil, err
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -328,10 +328,10 @@ func (r *Request) run() (Response, error) {
 	// 读取内容
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return Response{}, err
+		return nil, err
 	}
 
-	return Response{
+	return &Response{
 		StatusCode: resp.StatusCode,
 		Body:       body,
 		Header:     resp.Header,
