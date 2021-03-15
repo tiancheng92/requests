@@ -13,11 +13,12 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 )
 
-// Request 发起请求的结构体
-type Request struct {
+// request 发起请求的结构体
+type request struct {
 	Method  string
 	URL     string
 	Query   string
@@ -31,25 +32,31 @@ type Request struct {
 	}
 }
 
+var requestPool = sync.Pool{
+	New: func() interface{} {
+		return new(request)
+	},
+}
+
 // New 新建一个Request对象
-func New() Request {
-	return Request{}
+func New() *request {
+	return requestPool.Get().(*request)
 }
 
 // SetUrl 设置请求的url
-func (r *Request) SetUrl(url string) *Request {
+func (r *request) SetUrl(url string) *request {
 	r.URL = url
 	return r
 }
 
 // SetRawBody 设置请求体（json或xml）
-func (r *Request) SetRawBody(data string) *Request {
+func (r *request) SetRawBody(data string) *request {
 	r.Body = bytes.NewBuffer([]byte(data))
 	return r
 }
 
 // SetJsonBody 设置Json请求体（结构体、Array、Dict...）
-func (r *Request) SetJsonBody(data interface{}) *Request {
+func (r *request) SetJsonBody(data interface{}) *request {
 	j, err := json.Marshal(data)
 	if err != nil {
 		panic("json marshal failed")
@@ -60,7 +67,7 @@ func (r *Request) SetJsonBody(data interface{}) *Request {
 }
 
 // SetXMLBody 设置XML请求体（结构体、Array、Dict...）
-func (r *Request) SetXMLBody(data interface{}) *Request {
+func (r *request) SetXMLBody(data interface{}) *request {
 	j, err := xml.Marshal(data)
 	if err != nil {
 		panic("xml marshal failed")
@@ -70,13 +77,13 @@ func (r *Request) SetXMLBody(data interface{}) *Request {
 }
 
 // SetRawQuery 设置Query（字符串 e.g:a=1&b=2）
-func (r *Request) SetRawQuery(data string) *Request {
+func (r *request) SetRawQuery(data string) *request {
 	r.Query = strings.TrimPrefix(data, "?")
 	return r
 }
 
 // AddQuery 以k，v的形式逐一新增Query
-func (r *Request) AddQuery(key, value string) *Request {
+func (r *request) AddQuery(key, value string) *request {
 	ql := strings.Split(r.Query, "&")
 	ql = append(ql, fmt.Sprintf("%s=%s", key, value))
 	if len(ql) > 0 {
@@ -86,13 +93,13 @@ func (r *Request) AddQuery(key, value string) *Request {
 }
 
 // AddCookie 新增Cookie
-func (r *Request) AddCookie(cookie http.Cookie) *Request {
+func (r *request) AddCookie(cookie http.Cookie) *request {
 	r.Cookies = append(r.Cookies, &cookie)
 	return r
 }
 
 // AddHeader 新增Header头
-func (r *Request) AddHeader(key, value string) *Request {
+func (r *request) AddHeader(key, value string) *request {
 	if r.Header == nil {
 		r.Header = make(map[string]string)
 	}
@@ -101,7 +108,7 @@ func (r *Request) AddHeader(key, value string) *Request {
 }
 
 // AddFormHeader 添加表单请求头
-func (r *Request) AddFormHeader() *Request {
+func (r *request) AddFormHeader() *request {
 	if r.Header == nil {
 		r.Header = make(map[string]string)
 	}
@@ -110,7 +117,7 @@ func (r *Request) AddFormHeader() *Request {
 }
 
 // AddJsonHeader 添加Json请求头
-func (r *Request) AddJsonHeader() *Request {
+func (r *request) AddJsonHeader() *request {
 	if r.Header == nil {
 		r.Header = make(map[string]string)
 	}
@@ -119,7 +126,7 @@ func (r *Request) AddJsonHeader() *Request {
 }
 
 // AddJsonHeader 添加XML请求头
-func (r *Request) AddXMLHeader() *Request {
+func (r *request) AddXMLHeader() *request {
 	if r.Header == nil {
 		r.Header = make(map[string]string)
 	}
@@ -128,13 +135,13 @@ func (r *Request) AddXMLHeader() *Request {
 }
 
 // SetTimeOut 设置请求超时时间
-func (r *Request) SetTimeOut(duration time.Duration) *Request {
+func (r *request) SetTimeOut(duration time.Duration) *request {
 	r.TimeOut = duration
 	return r
 }
 
 // SetUploadFile 设置上传的文件
-func (r *Request) SetUploadFile(fieldname, filename string) *Request {
+func (r *request) SetUploadFile(fieldname, filename string) *request {
 	r.File = struct {
 		Fieldname string
 		Filename  string
@@ -143,31 +150,31 @@ func (r *Request) SetUploadFile(fieldname, filename string) *Request {
 }
 
 // Get 发起Get请求
-func (r *Request) Get() (*Response, error) {
+func (r *request) Get() (*Response, error) {
 	r.Method = "GET"
 	return r.run()
 }
 
 // Post 发起Post请求
-func (r *Request) Post() (*Response, error) {
+func (r *request) Post() (*Response, error) {
 	r.Method = "POST"
 	return r.run()
 }
 
 // Put 发起Put请求
-func (r *Request) Put() (*Response, error) {
+func (r *request) Put() (*Response, error) {
 	r.Method = "PUT"
 	return r.run()
 }
 
 // Patch 发起Patch请求
-func (r *Request) Patch() (*Response, error) {
+func (r *request) Patch() (*Response, error) {
 	r.Method = "PATCH"
 	return r.run()
 }
 
 // Delete 发起Delete请求
-func (r *Request) Delete() (*Response, error) {
+func (r *request) Delete() (*Response, error) {
 	r.Method = "DELETE"
 	return r.run()
 }
@@ -175,7 +182,7 @@ func (r *Request) Delete() (*Response, error) {
 /************* 以下方法不对外暴露 **************/
 
 // check 检测Request对象总的参数是否合法
-func (r *Request) check() error {
+func (r *request) check() error {
 	// 判断方法是否合法
 	var methodList = []string{"GET", "POST", "PUT", "DELETE", "PATCH"}
 	var methodValid = false
@@ -205,7 +212,7 @@ func (r *Request) check() error {
 }
 
 // getCompleteURL 获取完整的URL地址
-func (r *Request) getCompleteURL() string {
+func (r *request) getCompleteURL() string {
 	if r.Query != "" {
 		if strings.Contains(r.URL, "?") {
 			return fmt.Sprintf("%s&%s", r.URL, r.Query)
@@ -217,7 +224,7 @@ func (r *Request) getCompleteURL() string {
 }
 
 // setHeader 为http.Request对象设置请求头
-func (r *Request) setHeader(req *http.Request) *http.Request {
+func (r *request) setHeader(req *http.Request) *http.Request {
 	if len(r.Header) > 0 {
 		for k, v := range r.Header {
 			req.Header.Set(k, v)
@@ -227,7 +234,7 @@ func (r *Request) setHeader(req *http.Request) *http.Request {
 }
 
 // setCookie 为http.Request对象设置Cookie
-func (r *Request) setCookie(req *http.Request) *http.Request {
+func (r *request) setCookie(req *http.Request) *http.Request {
 	if len(r.Cookies) > 0 {
 		for _, c := range r.Cookies {
 			req.AddCookie(c)
@@ -237,7 +244,7 @@ func (r *Request) setCookie(req *http.Request) *http.Request {
 }
 
 // setUploadBody 设置文件上传的请求体
-func (r *Request) setUploadBody() error {
+func (r *request) setUploadBody() error {
 	body := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(body)
 
@@ -268,7 +275,7 @@ func (r *Request) setUploadBody() error {
 }
 
 // getBasisRequest 获取基础请求的http.Request对象
-func (r *Request) getBasisRequest() (*http.Request, error) {
+func (r *request) getBasisRequest() (*http.Request, error) {
 	url := r.getCompleteURL()
 	req, err := http.NewRequest(r.Method, url, r.Body)
 	if err != nil {
@@ -282,7 +289,7 @@ func (r *Request) getBasisRequest() (*http.Request, error) {
 }
 
 // getUploadRequest 获取支持文件上传的http.Request对象
-func (r *Request) getUploadRequest() (*http.Request, error) {
+func (r *request) getUploadRequest() (*http.Request, error) {
 	url := r.getCompleteURL()
 	err := r.setUploadBody()
 	if err != nil {
@@ -299,9 +306,11 @@ func (r *Request) getUploadRequest() (*http.Request, error) {
 }
 
 // run 执行request请求
-func (r *Request) run() (*Response, error) {
+func (r *request) run() (*Response, error) {
 	var req *http.Request
 	var err error
+	defer requestPool.Put(new(request))
+
 	// 检测数据
 	if err = r.check(); err != nil {
 		return nil, err
