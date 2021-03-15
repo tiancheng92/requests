@@ -26,7 +26,7 @@ type request struct {
 	Header  map[string]string
 	Cookies []*http.Cookie
 	TimeOut time.Duration
-	File    struct {
+	File    *struct {
 		Fieldname string
 		Filename  string
 	}
@@ -40,7 +40,9 @@ var requestPool = sync.Pool{
 
 // New 新建一个Request对象
 func New() *request {
-	return requestPool.Get().(*request)
+	r := requestPool.Get().(*request)
+	r.reset()
+	return r
 }
 
 // SetUrl 设置请求的url
@@ -142,7 +144,7 @@ func (r *request) SetTimeOut(duration time.Duration) *request {
 
 // SetUploadFile 设置上传的文件
 func (r *request) SetUploadFile(fieldname, filename string) *request {
-	r.File = struct {
+	r.File = &struct {
 		Fieldname string
 		Filename  string
 	}{fieldname, filename}
@@ -181,6 +183,17 @@ func (r *request) Delete() (*Response, error) {
 
 /************* 以下方法不对外暴露 **************/
 
+func (r *request) reset() {
+	r.Method = ""
+	r.URL = ""
+	r.Query = ""
+	r.Body = nil
+	r.Header = nil
+	r.Cookies = nil
+	r.TimeOut = time.Duration(0)
+	r.File = nil
+}
+
 // check 检测Request对象总的参数是否合法
 func (r *request) check() error {
 	// 判断方法是否合法
@@ -202,11 +215,13 @@ func (r *request) check() error {
 	}
 
 	// 判断文件上传所需的参数是否齐全
-	if r.File.Filename != "" && r.File.Fieldname == "" {
-		return errors.New("fieldname is empty")
-	}
-	if r.File.Filename == "" && r.File.Fieldname != "" {
-		return errors.New("filename is empty")
+	if r.File != nil {
+		if r.File.Filename != "" && r.File.Fieldname == "" {
+			return errors.New("fieldname is empty")
+		}
+		if r.File.Filename == "" && r.File.Fieldname != "" {
+			return errors.New("filename is empty")
+		}
 	}
 	return nil
 }
@@ -309,14 +324,15 @@ func (r *request) getUploadRequest() (*http.Request, error) {
 func (r *request) run() (*Response, error) {
 	var req *http.Request
 	var err error
-	defer requestPool.Put(new(request))
+	defer requestPool.Put(r)
 
 	// 检测数据
 	if err = r.check(); err != nil {
 		return nil, err
 	}
+
 	switch {
-	case r.File.Filename != "":
+	case r.File != nil && r.File.Filename != "":
 		req, err = r.getUploadRequest()
 	default:
 		req, err = r.getBasisRequest()
@@ -324,6 +340,7 @@ func (r *request) run() (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// 开始请求
 	client := &http.Client{Timeout: r.TimeOut}
 	resp, err := client.Do(req)
