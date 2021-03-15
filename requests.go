@@ -32,7 +32,7 @@ type request struct {
 	}
 }
 
-var requestPool = sync.Pool{
+var requestPool = &sync.Pool{
 	New: func() interface{} {
 		return new(request)
 	},
