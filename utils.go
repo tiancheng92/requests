@@ -1,6 +1,12 @@
 package requests
 
-import "unsafe"
+import (
+	"unsafe"
+
+	jsoniter "github.com/json-iterator/go"
+)
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func bytesToStr(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
