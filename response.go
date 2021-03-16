@@ -24,5 +24,5 @@ func (rb ResponseBody) XMLBind(obj interface{}) error {
 }
 
 func (rb ResponseBody) String() string {
-	return string(rb)
+	return bytesToStr(rb)
 }

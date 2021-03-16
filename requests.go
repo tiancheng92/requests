@@ -13,7 +13,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -32,17 +31,9 @@ type request struct {
 	}
 }
 
-var requestPool = &sync.Pool{
-	New: func() interface{} {
-		return new(request)
-	},
-}
-
 // New 新建一个Request对象
 func New() *request {
-	r := requestPool.Get().(*request)
-	r.reset()
-	return r
+	return new(request)
 }
 
 // SetUrl 设置请求的url
@@ -53,7 +44,7 @@ func (r *request) SetUrl(url string) *request {
 
 // SetRawBody 设置请求体（json或xml）
 func (r *request) SetRawBody(data string) *request {
-	r.Body = bytes.NewBuffer([]byte(data))
+	r.Body = bytes.NewBuffer(strToBytes(data))
 	return r
 }
 
@@ -182,17 +173,6 @@ func (r *request) Delete() (*Response, error) {
 }
 
 /************* 以下方法不对外暴露 **************/
-
-func (r *request) reset() {
-	r.Method = ""
-	r.URL = ""
-	r.Query = ""
-	r.Body = nil
-	r.Header = nil
-	r.Cookies = nil
-	r.TimeOut = time.Duration(0)
-	r.File = nil
-}
 
 // check 检测Request对象总的参数是否合法
 func (r *request) check() error {
@@ -324,7 +304,6 @@ func (r *request) getUploadRequest() (*http.Request, error) {
 func (r *request) run() (*Response, error) {
 	var req *http.Request
 	var err error
-	defer requestPool.Put(r)
 
 	// 检测数据
 	if err = r.check(); err != nil {
