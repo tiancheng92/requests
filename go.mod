@@ -1,4 +1,4 @@
-module requests
+module gethub.com/tiancheng92/requests
 
 go 1.16
 
