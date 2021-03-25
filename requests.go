@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -77,7 +75,7 @@ func (r *request) SetRawQuery(data string) *request {
 // AddQuery 以k，v的形式逐一新增Query
 func (r *request) AddQuery(key, value string) *request {
 	ql := strings.Split(r.Query, "&")
-	ql = append(ql, fmt.Sprintf("%s=%s", key, value))
+	ql = append(ql, strings.Join([]string{key, value}, "="))
 	if len(ql) > 0 {
 		r.Query = strings.Join(ql, "&")
 	}
@@ -209,9 +207,9 @@ func (r *request) check() error {
 func (r *request) getCompleteURL() string {
 	if r.Query != "" {
 		if strings.Contains(r.URL, "?") {
-			return fmt.Sprintf("%s&%s", r.URL, r.Query)
+			return strings.Join([]string{r.URL, r.Query}, "&")
 		}
-		return fmt.Sprintf("%s?%s", r.URL, r.Query)
+		return strings.Join([]string{r.URL, r.Query}, "?")
 	} else {
 		return r.URL
 	}
@@ -330,7 +328,7 @@ func (r *request) run() (*Response, error) {
 	}()
 
 	// 读取内容
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

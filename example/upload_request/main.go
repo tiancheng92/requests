@@ -2,7 +2,8 @@ package main
 
 import (
 	"log"
-	"requests"
+
+	"github.com/tiancheng92/requests"
 )
 
 func uploadRequest() {

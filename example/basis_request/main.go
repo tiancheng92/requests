@@ -2,8 +2,9 @@ package main
 
 import (
 	"log"
-	"requests"
 	"time"
+
+	"github.com/tiancheng92/requests"
 )
 
 type mockData struct {
