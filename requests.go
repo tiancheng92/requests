@@ -228,8 +228,8 @@ func (r *request) setHeader(req *http.Request) *http.Request {
 // setCookie 为http.Request对象设置Cookie
 func (r *request) setCookie(req *http.Request) *http.Request {
 	if len(r.Cookies) > 0 {
-		for _, c := range r.Cookies {
-			req.AddCookie(c)
+		for i := range r.Cookies {
+			req.AddCookie(r.Cookies[i])
 		}
 	}
 	return req
