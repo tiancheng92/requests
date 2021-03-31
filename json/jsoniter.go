@@ -7,9 +7,7 @@ import (
 )
 
 var (
-	json = jsoniter.ConfigCompatibleWithStandardLibrary
-	// Marshal is exported by gin/json package.
-	Marshal = json.Marshal
-	// Unmarshal is exported by gin/json package.
+	json      = jsoniter.ConfigCompatibleWithStandardLibrary
+	Marshal   = json.Marshal
 	Unmarshal = json.Unmarshal
 )

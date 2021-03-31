@@ -7,9 +7,6 @@ import (
 )
 
 var (
-	// Marshal is exported by gin/json package.
-	Marshal = json.Marshal
-	// Unmarshal is exported by gin/json package.
+	Marshal   = json.Marshal
 	Unmarshal = json.Unmarshal
-	// MarshalIndent is exported by gin/json package.
 )
