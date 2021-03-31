@@ -11,6 +11,8 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/tiancheng92/requests/json"
 )
 
 // request 发起请求的结构体

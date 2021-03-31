@@ -3,6 +3,8 @@ package requests
 import (
 	"encoding/xml"
 	"net/http"
+
+	"github.com/tiancheng92/requests/json"
 )
 
 // Response request请求的返回结果
