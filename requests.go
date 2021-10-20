@@ -2,6 +2,7 @@ package requests
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -24,8 +25,9 @@ type request struct {
 	Header  map[string]string
 	Cookies []*http.Cookie
 	TimeOut time.Duration
+	TLS     *tls.Config
 	File    *struct {
-		Fieldname string
+		FieldName string
 		Filename  string
 	}
 }
@@ -117,7 +119,7 @@ func (r *request) AddJsonHeader() *request {
 	return r
 }
 
-// AddJsonHeader 添加XML请求头
+// AddXMLHeader 添加XML请求头
 func (r *request) AddXMLHeader() *request {
 	if r.Header == nil {
 		r.Header = make(map[string]string)
@@ -133,11 +135,16 @@ func (r *request) SetTimeOut(duration time.Duration) *request {
 }
 
 // SetUploadFile 设置上传的文件
-func (r *request) SetUploadFile(fieldname, filename string) *request {
+func (r *request) SetUploadFile(fieldName, filename string) *request {
 	r.File = &struct {
-		Fieldname string
+		FieldName string
 		Filename  string
-	}{fieldname, filename}
+	}{fieldName, filename}
+	return r
+}
+
+func (r *request) SetTLS(TlSConfig *tls.Config) *request {
+	r.TLS = TlSConfig
 	return r
 }
 
@@ -195,10 +202,10 @@ func (r *request) check() error {
 
 	// 判断文件上传所需的参数是否齐全
 	if r.File != nil {
-		if r.File.Filename != "" && r.File.Fieldname == "" {
+		if r.File.Filename != "" && r.File.FieldName == "" {
 			return errors.New("fieldname is empty")
 		}
-		if r.File.Filename == "" && r.File.Fieldname != "" {
+		if r.File.Filename == "" && r.File.FieldName != "" {
 			return errors.New("filename is empty")
 		}
 	}
@@ -242,7 +249,7 @@ func (r *request) setUploadBody() error {
 	body := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(body)
 
-	fileWriter, err := bodyWriter.CreateFormFile(r.File.Fieldname, path.Base(r.File.Filename))
+	fileWriter, err := bodyWriter.CreateFormFile(r.File.FieldName, path.Base(r.File.Filename))
 	if err != nil {
 		return err
 	}
@@ -320,7 +327,7 @@ func (r *request) run() (*Response, error) {
 	}
 
 	// 开始请求
-	client := &http.Client{Timeout: r.TimeOut}
+	client := &http.Client{Timeout: r.TimeOut, Transport: &http.Transport{TLSClientConfig: r.TLS}}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
