@@ -3,6 +3,7 @@ package requests
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -145,6 +146,14 @@ func (r *request) SetUploadFile(fieldName, filename string) *request {
 
 func (r *request) SetTLS(TlSConfig *tls.Config) *request {
 	r.TLS = TlSConfig
+	return r
+}
+
+func (r *request) SetBasicAuth(username, password string) *request {
+	if r.Header == nil {
+		r.Header = make(map[string]string)
+	}
+	r.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(username+":"+password))
 	return r
 }
 
