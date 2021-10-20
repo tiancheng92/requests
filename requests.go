@@ -30,6 +30,7 @@ type request struct {
 	File    *struct {
 		FieldName string
 		Filename  string
+		FileData  io.Reader
 	}
 }
 
@@ -135,12 +136,22 @@ func (r *request) SetTimeOut(duration time.Duration) *request {
 	return r
 }
 
-// SetUploadFile 设置上传的文件
-func (r *request) SetUploadFile(fieldName, filename string) *request {
+// SetUploadFileByFilePath 设置上传的文件
+func (r *request) SetUploadFileByFilePath(fieldName, filename string) *request {
 	r.File = &struct {
 		FieldName string
 		Filename  string
-	}{fieldName, filename}
+		FileData  io.Reader
+	}{fieldName, filename, nil}
+	return r
+}
+
+func (r *request) SetUploadFile(fieldName, filename string, fileData io.ReadCloser) *request {
+	r.File = &struct {
+		FieldName string
+		Filename  string
+		FileData  io.Reader
+	}{fieldName, filename, fileData}
 	return r
 }
 
@@ -263,17 +274,23 @@ func (r *request) setUploadBody() error {
 		return err
 	}
 
-	f, err := os.Open(r.File.Filename)
-	if err != nil {
-		return err
+	var f io.Reader
+
+	if r.File.FileData == nil {
+		fileData, err := os.Open(r.File.Filename)
+		if err != nil {
+			return err
+		}
+		defer fileData.Close()
+		f = fileData
+	} else {
+		f = r.File.FileData
 	}
-	defer f.Close()
 
 	_, err = io.Copy(fileWriter, f)
 	if err != nil {
 		return err
 	}
-
 	contentType := bodyWriter.FormDataContentType()
 	err = bodyWriter.Close()
 	if err != nil {

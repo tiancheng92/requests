@@ -2,13 +2,19 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/tiancheng92/requests"
 )
 
 func uploadRequest() {
 	r := requests.New()
-	res, err := r.SetUrl("http://127.0.0.1:8080/upload/").SetUploadFile("uploadfile", "./upload_file.txt").Post()
+	f, err := os.Open("./upload_file.txt")
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	res, err := r.SetUrl("http://127.0.0.1:8080/upload/").SetUploadFileByFilePath("uploadfile", "./upload_file.txt").Post()
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
