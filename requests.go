@@ -146,7 +146,7 @@ func (r *request) SetUploadFileByFilePath(fieldName, filename string) *request {
 	return r
 }
 
-func (r *request) SetUploadFile(fieldName, filename string, fileData io.ReadCloser) *request {
+func (r *request) SetUploadFile(fieldName, filename string, fileData io.Reader) *request {
 	r.File = &struct {
 		FieldName string
 		Filename  string
