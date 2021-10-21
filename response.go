@@ -9,9 +9,10 @@ import (
 
 // Response request请求的返回结果
 type Response struct {
-	StatusCode int
-	Body       ResponseBody
-	Header     http.Header
+	StatusCode  int
+	Body        ResponseBody
+	Header      http.Header
+	RawResponse *http.Response
 }
 
 type ResponseBody []byte

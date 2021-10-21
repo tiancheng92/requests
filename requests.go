@@ -369,8 +369,9 @@ func (r *request) run() (*Response, error) {
 	}
 
 	return &Response{
-		StatusCode: resp.StatusCode,
-		Body:       body,
-		Header:     resp.Header,
+		StatusCode:  resp.StatusCode,
+		Body:        body,
+		Header:      resp.Header,
+		RawResponse: resp,
 	}, nil
 }
