@@ -198,6 +198,12 @@ func (r *request) Delete() (*Response, error) {
 	return r.run()
 }
 
+// Head 发起Head请求
+func (r *request) Head() (*Response, error) {
+	r.Method = "HEAD"
+	return r.run()
+}
+
 /************* 以下方法不对外暴露 **************/
 
 // check 检测Request对象总的参数是否合法
