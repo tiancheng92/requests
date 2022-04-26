@@ -58,36 +58,41 @@ func main() {
 			return
 		}
 
-		file, handler, err := r.FormFile("uploadfile")
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte("Status Internal Server Error"))
-			return
-		}
-		defer file.Close()
+		fieldList := []string{"uploadfile"}
+		for i := range fieldList {
+			file, handler, err := r.FormFile(fieldList[i])
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("Status Internal Server Error"))
+				return
+			}
 
-		_, err = fmt.Fprintf(w, "%v", handler.Header)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte("Status Internal Server Error"))
-			return
-		}
+			_, err = fmt.Fprintf(w, "%v", handler.Header)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("Status Internal Server Error"))
+				return
+			}
 
-		f, err := os.OpenFile("./"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte("Status Internal Server Error"))
-			return
-		}
+			f, err := os.OpenFile("./"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("Status Internal Server Error"))
+				return
+			}
 
-		defer f.Close()
-		_, err = io.Copy(f, file)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte("Status Internal Server Error"))
-			return
+			_, err = io.Copy(f, file)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("Status Internal Server Error"))
+				return
+			}
+			err = file.Close()
+			if err != nil {
+				return
+			}
+			f.Close()
 		}
-
 		_, _ = w.Write([]byte("success"))
 	})
 

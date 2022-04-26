@@ -7,9 +7,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"path"
 	"strings"
 	"time"
@@ -19,15 +19,16 @@ import (
 
 // request 发起请求的结构体
 type request struct {
-	Method  string
-	URL     string
-	Query   string
-	Body    io.Reader
-	Header  map[string]string
-	Cookies []*http.Cookie
-	TimeOut time.Duration
-	TLS     *tls.Config
-	File    *struct {
+	Method     string
+	URL        string
+	Query      string
+	Body       io.Reader
+	Header     map[string]string
+	Cookies    []*http.Cookie
+	TimeOut    time.Duration
+	TLS        *tls.Config
+	FileFields map[string]string
+	File       []*struct {
 		FieldName string
 		Filename  string
 		FileData  io.Reader
@@ -103,6 +104,15 @@ func (r *request) AddHeader(key, value string) *request {
 	return r
 }
 
+// AddFileField 新增上传文件时附带的key value对
+func (r *request) AddFileField(key, value string) *request {
+	if r.FileFields == nil {
+		r.FileFields = make(map[string]string)
+	}
+	r.FileFields[key] = value
+	return r
+}
+
 // AddFormHeader 添加表单请求头
 func (r *request) AddFormHeader() *request {
 	if r.Header == nil {
@@ -138,20 +148,20 @@ func (r *request) SetTimeOut(duration time.Duration) *request {
 
 // SetUploadFileByFilePath 设置上传的文件
 func (r *request) SetUploadFileByFilePath(fieldName, filename string) *request {
-	r.File = &struct {
+	r.File = append(r.File, &struct {
 		FieldName string
 		Filename  string
 		FileData  io.Reader
-	}{fieldName, filename, nil}
+	}{fieldName, filename, nil})
 	return r
 }
 
 func (r *request) SetUploadFile(fieldName, filename string, fileData io.Reader) *request {
-	r.File = &struct {
+	r.File = append(r.File, &struct {
 		FieldName string
 		Filename  string
 		FileData  io.Reader
-	}{fieldName, filename, fileData}
+	}{fieldName, filename, fileData})
 	return r
 }
 
@@ -227,12 +237,14 @@ func (r *request) check() error {
 	}
 
 	// 判断文件上传所需的参数是否齐全
-	if r.File != nil {
-		if r.File.Filename != "" && r.File.FieldName == "" {
-			return errors.New("fieldname is empty")
-		}
-		if r.File.Filename == "" && r.File.FieldName != "" {
-			return errors.New("filename is empty")
+	for i := range r.File {
+		if r.File[i] != nil {
+			if r.File[i].Filename != "" && r.File[i].FieldName == "" {
+				return errors.New("fieldname is empty")
+			}
+			if r.File[i].Filename == "" && r.File[i].FieldName != "" {
+				return errors.New("filename is empty")
+			}
 		}
 	}
 	return nil
@@ -272,37 +284,39 @@ func (r *request) setCookie(req *http.Request) *http.Request {
 
 // setUploadBody 设置文件上传的请求体
 func (r *request) setUploadBody() error {
-	body := &bytes.Buffer{}
-	bodyWriter := multipart.NewWriter(body)
-
-	fileWriter, err := bodyWriter.CreateFormFile(r.File.FieldName, path.Base(r.File.Filename))
-	if err != nil {
-		return err
-	}
-
-	var f io.Reader
-
-	if r.File.FileData == nil {
-		fileData, err := os.Open(r.File.Filename)
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+	for k, v := range r.FileFields {
+		err := bodyWriter.WriteField(k, v)
 		if err != nil {
 			return err
 		}
-		defer fileData.Close()
-		f = fileData
-	} else {
-		f = r.File.FileData
 	}
 
-	_, err = io.Copy(fileWriter, f)
-	if err != nil {
-		return err
+	for i := range r.File {
+		if r.File[i].FileData == nil {
+			_, err := bodyWriter.CreateFormFile(r.File[i].FieldName, path.Base(r.File[i].Filename))
+			if err != nil {
+				return err
+			}
+			fb, err := ioutil.ReadFile(path.Base(r.File[i].Filename))
+			if err != nil {
+				return err
+			}
+			bodyBuf.Write(fb)
+		} else {
+			_, err := io.Copy(bodyBuf, r.File[i].FileData)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	contentType := bodyWriter.FormDataContentType()
-	err = bodyWriter.Close()
+	err := bodyWriter.Close()
 	if err != nil {
 		return err
 	}
-	r.Body = body
+	r.Body = io.MultiReader(bodyBuf)
 	r.AddHeader("Content-Type", contentType)
 	return nil
 }
@@ -349,7 +363,7 @@ func (r *request) run() (*Response, error) {
 	}
 
 	switch {
-	case r.File != nil && r.File.Filename != "":
+	case len(r.File) != 0:
 		req, err = r.getUploadRequest()
 	default:
 		req, err = r.getBasisRequest()
