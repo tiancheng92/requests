@@ -17,11 +17,11 @@ type Response struct {
 
 type ResponseBody []byte
 
-func (rb ResponseBody) JsonBind(obj interface{}) error {
+func (rb ResponseBody) JsonBind(obj any) error {
 	return json.Unmarshal(rb, obj)
 }
 
-func (rb ResponseBody) XMLBind(obj interface{}) error {
+func (rb ResponseBody) XMLBind(obj any) error {
 	return xml.Unmarshal(rb, obj)
 }
 

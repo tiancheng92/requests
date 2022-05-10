@@ -53,7 +53,7 @@ func (r *request) SetRawBody(data string) *request {
 }
 
 // SetJsonBody 设置Json请求体（结构体、Array、Dict...）
-func (r *request) SetJsonBody(data interface{}) *request {
+func (r *request) SetJsonBody(data any) *request {
 	j, err := json.Marshal(data)
 	if err != nil {
 		panic("json marshal failed")
@@ -64,7 +64,7 @@ func (r *request) SetJsonBody(data interface{}) *request {
 }
 
 // SetXMLBody 设置XML请求体（结构体、Array、Dict...）
-func (r *request) SetXMLBody(data interface{}) *request {
+func (r *request) SetXMLBody(data any) *request {
 	j, err := xml.Marshal(data)
 	if err != nil {
 		panic("xml marshal failed")
