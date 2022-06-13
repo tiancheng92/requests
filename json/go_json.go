@@ -3,12 +3,12 @@
 
 package json
 
-import gojson "github.com/goccy/go-json"
+import json "github.com/goccy/go-json"
 
 var (
-	Marshal       = gojson.Marshal
-	Unmarshal     = gojson.Unmarshal
-	MarshalIndent = gojson.MarshalIndent
-	NewDecoder    = gojson.NewDecoder
-	NewEncoder    = gojson.NewEncoder
+	Marshal       = json.Marshal
+	Unmarshal     = json.Unmarshal
+	MarshalIndent = json.MarshalIndent
+	NewDecoder    = json.NewDecoder
+	NewEncoder    = json.NewEncoder
 )

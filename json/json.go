@@ -1,5 +1,4 @@
 //go:build !jsoniter && !go_json
-// +build !jsoniter,!go_json
 
 package json
 
