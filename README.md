@@ -1,8 +1,8 @@
+[![Build Status](https://github.com/tiancheng92/requests/workflows/Build/badge.svg)](https://github.com/tiancheng92/requests/actions)
+
 # 项目简介
 
 * requests包是使用Go语言开发，模仿python的request包写的用于发起http请求，并返回响应结果的第三方包。
-
-[![Build Status](https://github.com/tiancheng92/requests/workflows/Build/badge.svg)](https://github.com/tiancheng92/requests/actions)
 
 # 使用方法
 
@@ -14,8 +14,7 @@ go get -u github.com/tiancheng92/requests
 
 ## requests（请求方法）
 
-用户需要创建一个requests对象，然后调用相应的方法来设置请求体（链式调用），最后调用Get、Post、Put、Patch、Delete或Head方法发送请求。
-{:.info}
+* 用户需要创建一个requests对象，然后调用相应的方法来设置请求体（链式调用），最后调用Get、Post、Put、Patch、Delete或Head方法发送请求。
 
 | 函数签名                                                                                     | 描述                      |
 |------------------------------------------------------------------------------------------|-------------------------|
@@ -46,9 +45,8 @@ go get -u github.com/tiancheng92/requests
 
 ## response（返回内容）
 
-成功请求远端数据后，会返回一个response对象，该对象包含了请求的状态码（Response.StatusCode）、请求头(StatusCode.Header)、响应体(Response.Body)
-、原生响应体（Response.RawResponse）。
-{:.info}
+* 成功请求远端数据后，会返回一个response对象，该对象包含了请求的状态码（Response.StatusCode）、请求头(StatusCode.Header)、响应体(Response.Body)
+  、原生响应体（Response.RawResponse）。
 
 ### ResponseBody（响应体）
 
@@ -60,9 +58,8 @@ go get -u github.com/tiancheng92/requests
 
 # 构建相关
 
-requests库内建了自己的json包，支持使用[go_json](https://github.com/goccy/go-json)
-或[json-iterator](https://github.com/json-iterator/go)进行json解析。
-{:.info}
+* requests库内建了自己的json包，支持使用[go_json](https://github.com/goccy/go-json)
+  或[json-iterator](https://github.com/json-iterator/go)进行json解析。
 
 | json解析方式                    | 构建约束                        |
 |-----------------------------|-----------------------------|
