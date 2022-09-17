@@ -7,9 +7,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -27,6 +27,7 @@ type request struct {
 	Cookies    []*http.Cookie
 	TimeOut    time.Duration
 	TLS        *tls.Config
+	ReadBody   bool
 	FileFields map[string]string
 	File       []*struct {
 		FieldName string
@@ -37,7 +38,14 @@ type request struct {
 
 // New 新建一个Request对象
 func New() *request {
-	return new(request)
+	req := &request{ReadBody: true}
+	return req
+}
+
+// GetRawResponseOnly 设置请求的url
+func (r *request) GetRawResponseOnly() *request {
+	r.ReadBody = false
+	return r
 }
 
 // SetUrl 设置请求的url
@@ -174,7 +182,7 @@ func (r *request) SetBasicAuth(username, password string) *request {
 	if r.Header == nil {
 		r.Header = make(map[string]string)
 	}
-	r.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(username+":"+password))
+	r.Header["authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(username+":"+password))
 	return r
 }
 
@@ -294,18 +302,19 @@ func (r *request) setUploadBody() error {
 	}
 
 	for i := range r.File {
+		_, err := bodyWriter.CreateFormFile(r.File[i].FieldName, path.Base(r.File[i].Filename))
+		if err != nil {
+			return err
+		}
+
 		if r.File[i].FileData == nil {
-			_, err := bodyWriter.CreateFormFile(r.File[i].FieldName, path.Base(r.File[i].Filename))
-			if err != nil {
-				return err
-			}
-			fb, err := ioutil.ReadFile(path.Base(r.File[i].Filename))
+			fb, err := os.ReadFile(path.Base(r.File[i].Filename))
 			if err != nil {
 				return err
 			}
 			bodyBuf.Write(fb)
 		} else {
-			_, err := io.Copy(bodyBuf, r.File[i].FileData)
+			_, err = io.Copy(bodyBuf, r.File[i].FileData)
 			if err != nil {
 				return err
 			}
@@ -383,9 +392,12 @@ func (r *request) run() (*Response, error) {
 	}()
 
 	// 读取内容
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+	var body []byte
+	if r.ReadBody {
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Response{
