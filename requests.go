@@ -388,7 +388,9 @@ func (r *request) run() (*Response, error) {
 		return nil, err
 	}
 	defer func() {
-		_ = resp.Body.Close()
+		if r.ReadBody {
+			_ = resp.Body.Close()
+		}
 	}()
 
 	// 读取内容
