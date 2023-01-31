@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tiancheng92/requests/json"
@@ -36,10 +37,29 @@ type request struct {
 	}
 }
 
+func (r *request) reset() {
+	r.Method = ""
+	r.URL = ""
+	r.Query = ""
+	r.Body = nil
+	r.Header = nil
+	r.Cookies = nil
+	r.TimeOut = 0
+	r.TLS = nil
+	r.ReadBody = true
+	r.FileFields = nil
+	r.File = nil
+}
+
+var resultPool = &sync.Pool{
+	New: func() any {
+		return &request{ReadBody: true}
+	},
+}
+
 // New 新建一个Request对象
 func New() *request {
-	req := &request{ReadBody: true}
-	return req
+	return resultPool.Get().(*request)
 }
 
 // GetRawResponseOnly 设置请求的url
@@ -363,6 +383,10 @@ func (r *request) getUploadRequest() (*http.Request, error) {
 
 // run 执行request请求
 func (r *request) run() (*Response, error) {
+	defer func() {
+		r.reset()
+		resultPool.Put(r)
+	}()
 	var req *http.Request
 	var err error
 

@@ -1,9 +1,9 @@
 module github.com/tiancheng92/requests
 
-go 1.18
+go 1.19
 
 require (
-	github.com/goccy/go-json v0.9.7
+	github.com/goccy/go-json v0.10.0
 	github.com/json-iterator/go v1.1.12
 )
 
